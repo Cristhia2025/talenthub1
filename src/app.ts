@@ -15,6 +15,11 @@ import { createMongoClient } from './shared/database/mongoClient';
 import { PrismaVacancyRepository } from './modules/vacancies/adapters/persistence/PrismaVacancyRepository';
 import { createPrismaClient } from './shared/database/prismaClient';
 import { PrismaCompanyRepository } from './modules/companies/adapters/persistence/PrismaCompanyRepository';
+import { CandidateRepository } from './modules/candidates/ports/CandidateRepository';
+import { InMemoryCandidateRepository } from './modules/candidates/adapters/persistence/InMemoryCandidateRepository';
+import { PrismaCandidateRepository } from './modules/candidates/adapters/persistence/PrismaCandidateRepository';
+import { CandidateService } from './modules/candidates/application/CandidateService';
+import { createCandidateRouter } from './modules/candidates/adapters/http/candidateRoutes';
 
 const app = express();
 
@@ -68,14 +73,29 @@ const createCompanyRepository = (): {name: string; repository: CompanyRepository
 const {name: companiesAdapterName, repository: companyRepository} = createCompanyRepository();
 console.log(`Companies persistence: ${companiesAdapterName}`);
 
+const createCandidateRepository = (): {name: string; repository: CandidateRepository} => {
+    const databaseUrl = process.env.DATABASE_URL;
+
+    if(process.env.CANDIDATES_ADAPTER === 'prisma' && databaseUrl){
+        return {name: 'PostgreSQL with Prisma', repository: new PrismaCandidateRepository(createPrismaClient(databaseUrl))};
+    }
+
+    return {name: 'in memory', repository: new InMemoryCandidateRepository()};
+}
+
+const {name: candidatesAdapterName, repository: candidateRepository} = createCandidateRepository();
+console.log(`Candidates persistence: ${candidatesAdapterName}`);
+
 
 //2) Servicio (casos de uso)
 const vancacyService = new VancacyService(vacancyRepository);
 const companyService = new CompanyService(companyRepository);
+const candidateService = new CandidateService(candidateRepository);
 
 //3) Rutas: se le entrega el servicio y se monta bajo el prefijo /vacancies
 app.use('/vacancies', createVacancyRouter(vancacyService));
 app.use('/companies', createCompanyRouter(companyService));
+app.use('/candidates', createCandidateRouter(candidateService));
 
 app.use(notFoundHandler);
 

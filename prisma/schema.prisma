@@ -61,3 +61,14 @@ model Vacancy {
 
   @@map("vacancies")
 }
+
+model Candidate {
+  id              String   @id @default(uuid())
+  name            String   @db.VarChar(150)
+  email           String   @unique @db.VarChar(254)
+  city            String   @db.VarChar(100)
+  experienceYears Int      @map("experience_years")
+  skills          String[] @default([])
+
+  @@map("candidates")
+}
