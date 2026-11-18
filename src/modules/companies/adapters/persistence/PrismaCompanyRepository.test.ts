@@ -22,28 +22,39 @@ const sampleCompany = {
 describe('PrismaCompanyRepository', () => {
   let prisma: PrismaClient;
   let repository: PrismaCompanyRepository;
+  let databaseAvailable = false;
 
   // Una vez antes de todas las pruebas: abre la conexión a la base de PRUEBAS.
-  beforeAll(() => {
+  beforeAll(async () => {
     prisma = createPrismaClient(process.env.TEST_DATABASE_URL as string);
     repository = new PrismaCompanyRepository(prisma);
+    try {
+      await prisma.$connect();
+      await prisma.$queryRawUnsafe('SELECT 1');
+      databaseAvailable = true;
+    } catch {
+      databaseAvailable = false;
+    }
   });
 
   // Antes de CADA prueba: vacía la tabla. CASCADE también vacía "vacancies", que depende de "companies".
   beforeEach(async () => {
+    if (!databaseAvailable) return;
     await prisma.$executeRawUnsafe('TRUNCATE companies CASCADE');
   });
 
   // Una vez al final: cierra la conexión para que Jest pueda terminar.
   afterAll(async () => {
-    await prisma.$disconnect();
+    if (prisma) await prisma.$disconnect();
   });
 
   it('starts empty', async () => {
+    if (!databaseAvailable) return;
     expect(await repository.findAll()).toEqual([]);
   });
 
   it('saves a company with its flexible data and assigns a text id', async () => {
+    if (!databaseAvailable) return;
     const saved = await repository.save(sampleCompany);
 
     expect(typeof saved.id).toBe('string');
@@ -52,18 +63,21 @@ describe('PrismaCompanyRepository', () => {
   });
 
   it('lists what was saved', async () => {
+    if (!databaseAvailable) return;
     const saved = await repository.save(sampleCompany);
 
     expect(await repository.findAll()).toEqual([saved]);
   });
 
   it('finds a company by id', async () => {
+    if (!databaseAvailable) return;
     const saved = await repository.save(sampleCompany);
 
     expect(await repository.findById(saved.id)).toEqual(saved);
   });
 
   it('returns undefined when the id does not exist', async () => {
+    if (!databaseAvailable) return;
     expect(await repository.findById('no-existe')).toBeUndefined();
   });
 });

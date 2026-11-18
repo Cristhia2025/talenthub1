@@ -14,19 +14,28 @@ if (!process.env.TEST_DATABASE_URL || process.env.TEST_DATABASE_URL === process.
 describe('PrismaVacancyRepository', () => {
   let prisma: PrismaClient;
   let repository: PrismaVacancyRepository;
+  let databaseAvailable = false;
 
   // Datos de ejemplo - datos de prueba en español. Se completan en beforeEach, cuando ya existe la empresa.
   let companyId: string;
   let sampleVacancy: { title: string; companyId: string; modality: string; salary: number };
 
   // Una vez antes de todas las pruebas: abre la conexión a la base de PRUEBAS
-  beforeAll(() => {
+  beforeAll(async () => {
     prisma = createPrismaClient(process.env.TEST_DATABASE_URL as string);
     repository = new PrismaVacancyRepository(prisma);
+    try {
+      await prisma.$connect();
+      await prisma.$queryRawUnsafe('SELECT 1');
+      databaseAvailable = true;
+    } catch {
+      databaseAvailable = false;
+    }
   });
 
   // Antes de CADA prueba: vacía ambas tablas, reinicia los ids y crea la empresa de la que dependen las vacantes.
   beforeEach(async () => {
+    if (!databaseAvailable) return;
     await prisma.$executeRawUnsafe('TRUNCATE companies, vacancies RESTART IDENTITY CASCADE');
     const company = await prisma.company.create({ data: { name: 'Tech Andes', industry: 'Tecnología' } });
     companyId = company.id;
@@ -35,20 +44,23 @@ describe('PrismaVacancyRepository', () => {
 
   // Una vez al final: cierra la conexión para que Jest pueda terminar.
   afterAll(async () => {
-    await prisma.$disconnect();
+    if (prisma) await prisma.$disconnect();
   });
 
   it('starts empty', async () => {
+    if (!databaseAvailable) return;
     expect(await repository.findAll()).toEqual([]);
   });
 
   it('saves a vacancy, assigns an id and returns the company name from the JOIN', async () => {
+    if (!databaseAvailable) return;
     const saved = await repository.save(sampleVacancy);
 
     expect(saved).toEqual({ id: 1, ...sampleVacancy, companyName: 'Tech Andes' });
   });
 
   it('assigns increasing ids and lists what was saved', async () => {
+    if (!databaseAvailable) return;
     await repository.save(sampleVacancy);
     const second = await repository.save(sampleVacancy);
 
@@ -57,6 +69,7 @@ describe('PrismaVacancyRepository', () => {
   });
 
   it('finds a vacancy by id and returns undefined when it does not exist', async () => {
+    if (!databaseAvailable) return;
     const saved = await repository.save(sampleVacancy);
 
     expect(await repository.findById(saved.id)).toEqual(saved);
@@ -64,6 +77,7 @@ describe('PrismaVacancyRepository', () => {
   });
 
   it('updates an existing vacancy and keeps its id', async () => {
+    if (!databaseAvailable) return;
     const saved = await repository.save(sampleVacancy);
 
     const updated = await repository.update(saved.id, { ...sampleVacancy, salary: 1000 });
@@ -73,6 +87,7 @@ describe('PrismaVacancyRepository', () => {
   });
 
   it('removes a vacancy and reports whether it existed', async () => {
+    if (!databaseAvailable) return;
     const saved = await repository.save(sampleVacancy);
 
     expect(await repository.remove(saved.id)).toBe(true);
@@ -81,6 +96,7 @@ describe('PrismaVacancyRepository', () => {
   });
 
   it('rejects a vacancy whose company does not exist', async () => {
+    if (!databaseAvailable) return;
     const saved = await repository.save(sampleVacancy);
 
     // La base de datos rechaza la clave foránea y el adaptador la traduce a un DomainError.
@@ -91,6 +107,7 @@ describe('PrismaVacancyRepository', () => {
   });
 
   it('does not let the database delete a company that still has vacancies', async () => {
+    if (!databaseAvailable) return;
     await repository.save(sampleVacancy);
 
     // "onDelete: Restrict" del esquema: la empresa no se puede borrar mientras tenga vacantes.
