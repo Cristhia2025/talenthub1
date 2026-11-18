@@ -1,15 +1,8 @@
-// Carga el .env para tener MONGODB_TEST_URI (Jest no lo carga solo).
-import 'dotenv/config';
-
 import { MongoClient } from 'mongodb';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import { createMongoClient } from '../../../../shared/database/mongoClient';
 import { MongoCompanyRepository } from './MongoCompanyRepository';
-
-// La base de pruebas debe existir y ser distinta de la de desarrollo
-if (!process.env.MONGODB_TEST_URI || process.env.MONGODB_TEST_URI === process.env.MONGODB_URI) {
-  throw new Error('MONGODB_TEST_URI debe existir y ser distinta de MONGODB_URI');
-}
 
 // Empresa de ejemplo con datos flexibles - datos de prueba en español.
 const sampleCompany = {
@@ -21,12 +14,13 @@ const sampleCompany = {
 };
 
 describe('MongoCompanyRepository', () => {
+  let server: MongoMemoryServer;
   let client: MongoClient;
   let repository: MongoCompanyRepository;
 
-  // Una vez antes de todas las pruebas - crea el cliente y el repositorio de la base de PRUEBAS.
-  beforeAll(() => {
-    client = createMongoClient(process.env.MONGODB_TEST_URI as string);
+  beforeAll(async () => {
+    server = await MongoMemoryServer.create();
+    client = createMongoClient(server.getUri());
     repository = new MongoCompanyRepository(client);
   });
 
@@ -37,7 +31,8 @@ describe('MongoCompanyRepository', () => {
 
   // Una vez al final - cierra la conexión para que Jest pueda terminar.
   afterAll(async () => {
-    await client.close();
+    if (client) await client.close();
+    if (server) await server.stop();
   });
 
   it('starts empty', async () => {

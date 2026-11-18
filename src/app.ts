@@ -1,0 +1,104 @@
+import express from 'express';
+import cors from 'cors';
+
+import { InMemoryVacancyRepository } from './modules/vacancies/adapters/persistence/InMemoryVacancyRepository';
+import { VancacyService } from './modules/vacancies/application/VacancyService';
+import { createVacancyRouter } from './modules/vacancies/adapters/http/vacancyRoutes';
+import { errorHandler, notFoundHandler } from './shared/httpErrorHandlers';
+import { VacancyRepository } from './modules/vacancies/ports/VacancyRepository';
+import { createCompanyRouter } from './modules/companies/adapters/http/companyRoutes';
+import { InMemoryCompanyRepository } from './modules/companies/adapters/persistence/InMemoryCompanyRepository';
+import { CompanyService } from './modules/companies/application/CompanyService';
+import { CompanyRepository } from './modules/companies/ports/CompanyRepository';
+import { MongoCompanyRepository } from './modules/companies/adapters/persistence/MongoCompanyRepository';
+import { createMongoClient } from './shared/database/mongoClient';
+import { PrismaVacancyRepository } from './modules/vacancies/adapters/persistence/PrismaVacancyRepository';
+import { createPrismaClient } from './shared/database/prismaClient';
+import { PrismaCompanyRepository } from './modules/companies/adapters/persistence/PrismaCompanyRepository';
+import { CandidateRepository } from './modules/candidates/ports/CandidateRepository';
+import { InMemoryCandidateRepository } from './modules/candidates/adapters/persistence/InMemoryCandidateRepository';
+import { PrismaCandidateRepository } from './modules/candidates/adapters/persistence/PrismaCandidateRepository';
+import { CandidateService } from './modules/candidates/application/CandidateService';
+import { createCandidateRouter } from './modules/candidates/adapters/http/candidateRoutes';
+
+const app = express();
+
+//CORS: solo el origen del frontend puede leer las respuestas
+//La dirección sale de cors_origin, si no existe, s eusa la de desarrollo de Vite
+app.use(cors({origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173'}))
+
+app.use(express.json());
+
+const samplesVacancies = [
+    {id: 1, title: 'Desarrollador Backend', companyId: 'empresa-1', companyName:'Tech Andes', modality: 'remoto', salary: 800},
+    {id: 2, title: 'Analista de Datos', companyId: 'empresa-2', companyName:'DataSur', modality: 'híbrido', salary: 1200},
+];
+
+//Elige el repositorio de vancantes según las variables de entorno .evn
+const createVacancyRepository = (): {name: string; repository: VacancyRepository} => {
+    const databaseUrl = process.env.DATABASE_URL;
+
+    //Sin DATABASE_URL -> lista en memoria
+    if(!databaseUrl){
+        return {name: 'in memory', repository: new InMemoryVacancyRepository(samplesVacancies)};
+    }
+
+    // Con VACANACIES_ADAPTER = prisma: PostgreSQL a través de Prisma
+    return {
+       name: 'PostgreSQL with Prisma', repository: new PrismaVacancyRepository(createPrismaClient(databaseUrl)),
+    }
+
+}
+
+const {name: vacanciesAdapterName, repository: vacancyRepository} = createVacancyRepository();
+console.log(`Vacancies persistence: ${vacanciesAdapterName}`);
+
+
+const createCompanyRepository = (): {name: string; repository: CompanyRepository} =>{
+    const databaseUrl = process.env.DATABASE_URL;
+    const mongodbUri = process.env.MONGODB_URI;
+
+    if(process.env.COMPANIES_ADAPTER === 'prisma' && databaseUrl){
+        return {name: 'PostgreSQL with Prisma', repository: new PrismaCompanyRepository(createPrismaClient(databaseUrl)),};
+    };
+
+    if(!mongodbUri){
+        return {name: 'in memory', repository: new InMemoryCompanyRepository()};
+    }
+
+    //Por defecto: Mongo DB
+    return { name: 'Mongo DB', repository: new MongoCompanyRepository(createMongoClient(mongodbUri))};
+}
+
+const {name: companiesAdapterName, repository: companyRepository} = createCompanyRepository();
+console.log(`Companies persistence: ${companiesAdapterName}`);
+
+const createCandidateRepository = (): {name: string; repository: CandidateRepository} => {
+    const databaseUrl = process.env.DATABASE_URL;
+
+    if(process.env.CANDIDATES_ADAPTER === 'prisma' && databaseUrl){
+        return {name: 'PostgreSQL with Prisma', repository: new PrismaCandidateRepository(createPrismaClient(databaseUrl))};
+    }
+
+    return {name: 'in memory', repository: new InMemoryCandidateRepository()};
+}
+
+const {name: candidatesAdapterName, repository: candidateRepository} = createCandidateRepository();
+console.log(`Candidates persistence: ${candidatesAdapterName}`);
+
+
+//2) Servicio (casos de uso)
+const vancacyService = new VancacyService(vacancyRepository);
+const companyService = new CompanyService(companyRepository);
+const candidateService = new CandidateService(candidateRepository);
+
+//3) Rutas: se le entrega el servicio y se monta bajo el prefijo /vacancies
+app.use('/vacancies', createVacancyRouter(vancacyService));
+app.use('/companies', createCompanyRouter(companyService));
+app.use('/candidates', createCandidateRouter(candidateService));
+
+app.use(notFoundHandler);
+
+app.use(errorHandler);
+
+export default app;
