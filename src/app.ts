@@ -53,7 +53,7 @@ const createVacancyRepository = (): {name: string; repository: VacancyRepository
 const {name: vacanciesAdapterName, repository: vacancyRepository} = createVacancyRepository();
 console.log(`Vacancies persistence: ${vacanciesAdapterName}`);
 
-
+//Funcion company prisma
 const createCompanyRepository = (): {name: string; repository: CompanyRepository} =>{
     const databaseUrl = process.env.DATABASE_URL;
     const mongodbUri = process.env.MONGODB_URI;

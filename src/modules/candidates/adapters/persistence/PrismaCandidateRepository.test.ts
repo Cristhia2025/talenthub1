@@ -10,11 +10,11 @@ if (!process.env.TEST_DATABASE_URL || process.env.TEST_DATABASE_URL === process.
 }
 
 const candidate = {
-  name: 'Ana Torres',
+  firstName: 'Ana',
+  lastName: 'Torres',
   email: 'ana@correo.com',
-  city: 'Quito',
-  experienceYears: 2,
-  skills: ['TypeScript', 'SQL'],
+  phone: '555-1234',
+  companyId: null,
 };
 
 describe('PrismaCandidateRepository', () => {
@@ -28,7 +28,7 @@ describe('PrismaCandidateRepository', () => {
   });
 
   beforeEach(async () => {
-    await prisma.$executeRawUnsafe('TRUNCATE candidates');
+    await prisma.candidate.deleteMany();
   });
 
   afterAll(async () => {
@@ -42,17 +42,17 @@ describe('PrismaCandidateRepository', () => {
     expect(saved.id).toBeTruthy();
     expect(await repository.findAll()).toEqual([saved]);
     expect(await repository.findById(saved.id)).toEqual(saved);
-    expect(await repository.findById('missing')).toBeUndefined();
+    expect(await repository.findById(999)).toBeUndefined();
   });
 
   it('updates and removes candidates', async () => {
     const saved = await repository.save(candidate);
 
-    expect(await repository.update(saved.id, { ...candidate, city: 'Cuenca' })).toEqual({
+    expect(await repository.update(saved.id, { ...candidate, firstName: 'Ana Maria' })).toEqual({
       ...saved,
-      city: 'Cuenca',
+      firstName: 'Ana Maria',
     });
-    expect(await repository.update('missing', candidate)).toBeUndefined();
+    expect(await repository.update(999, candidate)).toBeUndefined();
     expect(await repository.remove(saved.id)).toBe(true);
     expect(await repository.remove(saved.id)).toBe(false);
   });

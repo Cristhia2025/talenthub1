@@ -1,12 +1,12 @@
 import { DomainError } from '../../../shared/DomainError';
 
 export interface Candidate {
-  id: string;
-  name: string;
+  id: number;
+  firstName: string;
+  lastName: string;
   email: string;
-  city: string;
-  experienceYears: number;
-  skills: string[];
+  phone: string | null;
+  companyId: string | null;
 }
 
 export type NewCandidate = Omit<Candidate, 'id'>;
@@ -16,10 +16,14 @@ const isNonEmptyString = (value: unknown): value is string =>
 
 export const parseNewCandidate = (input: unknown): NewCandidate => {
   const data = (input ?? {}) as Record<string, unknown>;
-  const { name, email, city, experienceYears, skills } = data;
+  const { firstName, lastName, email, phone, companyId } = data;
 
-  if (!isNonEmptyString(name) || !isNonEmptyString(email) || !isNonEmptyString(city)) {
-    throw new DomainError('El nombre, el correo y la ciudad son obligatorios');
+  if (!isNonEmptyString(firstName) || firstName.trim().length > 100 ||
+      !isNonEmptyString(lastName) || lastName.trim().length > 100) {
+    throw new DomainError('El nombre y el apellido son obligatorios y no deben superar 100 caracteres');
+  }
+  if (!isNonEmptyString(email) || email.trim().length > 150) {
+    throw new DomainError('El correo es obligatorio y no debe superar 150 caracteres');
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -27,19 +31,27 @@ export const parseNewCandidate = (input: unknown): NewCandidate => {
     throw new DomainError('El correo electrónico no es válido');
   }
 
-  if (typeof experienceYears !== 'number' || !Number.isInteger(experienceYears) || experienceYears < 0) {
-    throw new DomainError('Los años de experiencia deben ser un entero mayor o igual a 0');
+  let normalizedPhone: string | null = null;
+  if (phone !== undefined && phone !== null) {
+    if (typeof phone !== 'string' || phone.trim().length > 20) {
+      throw new DomainError('El teléfono no debe superar 20 caracteres');
+    }
+    normalizedPhone = phone.trim() || null;
   }
 
-  if (!Array.isArray(skills) || !skills.every(isNonEmptyString)) {
-    throw new DomainError('Las habilidades deben ser una lista de textos válidos');
+  let normalizedCompanyId: string | null = null;
+  if (companyId !== undefined && companyId !== null) {
+    if (typeof companyId !== 'string' || companyId.trim() === '') {
+      throw new DomainError('El identificador de la empresa no es válido');
+    }
+    normalizedCompanyId = companyId.trim();
   }
 
   return {
-    name: name.trim(),
+    firstName: firstName.trim(),
+    lastName: lastName.trim(),
     email: normalizedEmail,
-    city: city.trim(),
-    experienceYears,
-    skills: skills.map((skill: string) => skill.trim()),
+    phone: normalizedPhone,
+    companyId: normalizedCompanyId,
   };
 };

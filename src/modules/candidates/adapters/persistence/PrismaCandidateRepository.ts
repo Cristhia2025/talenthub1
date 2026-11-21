@@ -4,21 +4,21 @@ import { Candidate, NewCandidate } from '../../domain/Candidate';
 import { CandidateRepository } from '../../ports/CandidateRepository';
 
 type CandidateRecord = {
-  id: string;
-  name: string;
+  id: number;
+  firstName: string;
+  lastName: string;
   email: string;
-  city: string;
-  experienceYears: number;
-  skills: string[];
+  phone: string | null;
+  companyId: string | null;
 };
 
 const toCandidate = (record: CandidateRecord): Candidate => ({
   id: record.id,
-  name: record.name,
+  firstName: record.firstName,
+  lastName: record.lastName,
   email: record.email,
-  city: record.city,
-  experienceYears: record.experienceYears,
-  skills: record.skills,
+  phone: record.phone,
+  companyId: record.companyId,
 });
 
 const hasErrorCode = (error: unknown, code: string): boolean =>
@@ -30,11 +30,11 @@ export class PrismaCandidateRepository implements CandidateRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   findAll = async (): Promise<Candidate[]> => {
-    const records = await this.prisma.candidate.findMany({ orderBy: { name: 'asc' } });
+    const records = await this.prisma.candidate.findMany({ orderBy: { firstName: 'asc' } });
     return records.map(toCandidate);
   };
 
-  findById = async (id: string): Promise<Candidate | undefined> => {
+  findById = async (id: number): Promise<Candidate | undefined> => {
     const record = await this.prisma.candidate.findUnique({ where: { id } });
     return record ? toCandidate(record) : undefined;
   };
@@ -50,7 +50,7 @@ export class PrismaCandidateRepository implements CandidateRepository {
     }
   };
 
-  update = async (id: string, candidate: NewCandidate): Promise<Candidate | undefined> => {
+  update = async (id: number, candidate: NewCandidate): Promise<Candidate | undefined> => {
     try {
       return toCandidate(await this.prisma.candidate.update({ where: { id }, data: candidate }));
     } catch (error) {
@@ -62,7 +62,7 @@ export class PrismaCandidateRepository implements CandidateRepository {
     }
   };
 
-  remove = async (id: string): Promise<boolean> => {
+  remove = async (id: number): Promise<boolean> => {
     try {
       await this.prisma.candidate.delete({ where: { id } });
       return true;

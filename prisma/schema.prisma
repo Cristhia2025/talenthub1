@@ -39,6 +39,9 @@ model Company {
   // Campo "virtual": no es una columna. Permite pedir las vacantes de una empresa.
   vacancies   Vacancy[]
 
+  // Relación muchos a muchos con Candidate.
+  candidates  Candidate[]
+
   @@map("companies")
 }
 
@@ -62,13 +65,18 @@ model Vacancy {
   @@map("vacancies")
 }
 
+
+// MODELO CANDIDATE: representa los candidatos
 model Candidate {
-  id              String   @id @default(uuid())
-  name            String   @db.VarChar(150)
-  email           String   @unique @db.VarChar(254)
-  city            String   @db.VarChar(100)
-  experienceYears Int      @map("experience_years")
-  skills          String[] @default([])
+  id        Int      @id @default(autoincrement())
+  firstName String   @map("first_name") @db.VarChar(100)
+  lastName  String   @map("last_name") @db.VarChar(100)
+  email     String   @unique @db.VarChar(150)
+  phone     String?  @db.VarChar(20)
+
+  // Relación muchos a muchos con Company
+  companies Company[]
 
   @@map("candidates")
+
 }

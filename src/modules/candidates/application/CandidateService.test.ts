@@ -4,23 +4,23 @@ import { InMemoryCandidateRepository } from '../adapters/persistence/InMemoryCan
 import { CandidateService } from './CandidateService';
 
 const validCandidate = {
-  name: 'Ana Torres',
+  firstName: 'Ana',
+  lastName: 'Torres',
   email: 'ana@correo.com',
-  city: 'Quito',
-  experienceYears: 2,
-  skills: ['TypeScript', 'SQL'],
+  phone: '555-1234',
+  companyId: null,
 };
 
 const createService = (): CandidateService => new CandidateService(new InMemoryCandidateRepository());
 
 describe('CandidateService', () => {
   it('creates candidates with an id', async () => {
-    expect(await createService().create(validCandidate)).toEqual({ id: '1', ...validCandidate });
+    expect(await createService().create(validCandidate)).toEqual({ id: 1, ...validCandidate });
   });
 
   it('rejects invalid candidates', async () => {
     const service = createService();
-    await expect(service.create({ ...validCandidate, experienceYears: -1 })).rejects.toThrow(DomainError);
+    await expect(service.create({ ...validCandidate, firstName: '' })).rejects.toThrow(DomainError);
     expect(await service.list()).toEqual([]);
   });
 
@@ -30,16 +30,16 @@ describe('CandidateService', () => {
 
     expect(await service.list()).toEqual([created]);
     expect(await service.getById(created.id)).toEqual(created);
-    await expect(service.getById('missing')).rejects.toThrow(NotFoundError);
+    await expect(service.getById(999)).rejects.toThrow(NotFoundError);
   });
 
   it('updates candidate data and keeps its id', async () => {
     const service = createService();
     const created = await service.create(validCandidate);
-    const updated = await service.update(created.id, { ...validCandidate, city: 'Cuenca' });
+    const updated = await service.update(created.id, { ...validCandidate, firstName: 'Ana Maria' });
 
-    expect(updated).toEqual({ ...created, city: 'Cuenca' });
-    await expect(service.update('missing', validCandidate)).rejects.toThrow(NotFoundError);
+    expect(updated).toEqual({ ...created, firstName: 'Ana Maria' });
+    await expect(service.update(999, validCandidate)).rejects.toThrow(NotFoundError);
   });
 
   it('removes candidates and reports missing ids', async () => {
