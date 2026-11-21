@@ -9,7 +9,7 @@ export class CandidateService {
 
   list = async (): Promise<Candidate[]> => this.repository.findAll();
 
-  getById = async (id: string): Promise<Candidate> => {
+  getById = async (id: number): Promise<Candidate> => {
     const candidate = await this.repository.findById(id);
     if (!candidate) {
       throw new NotFoundError(CANDIDATE_NOT_FOUND_MESSAGE);
@@ -19,7 +19,7 @@ export class CandidateService {
 
   create = async (input: unknown): Promise<Candidate> => this.repository.save(parseNewCandidate(input));
 
-  update = async (id: string, input: unknown): Promise<Candidate> => {
+  update = async (id: number, input: unknown): Promise<Candidate> => {
     const updated = await this.repository.update(id, parseNewCandidate(input));
     if (!updated) {
       throw new NotFoundError(CANDIDATE_NOT_FOUND_MESSAGE);
@@ -27,7 +27,7 @@ export class CandidateService {
     return updated;
   };
 
-  remove = async (id: string): Promise<void> => {
+  remove = async (id: number): Promise<void> => {
     if (!(await this.repository.remove(id))) {
       throw new NotFoundError(CANDIDATE_NOT_FOUND_MESSAGE);
     }

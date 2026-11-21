@@ -3,9 +3,9 @@ import { DomainError } from '../../../../shared/DomainError';
 import { HTTP_STATUS } from '../../../../shared/httpStatus';
 import { CandidateService } from '../../application/CandidateService';
 
-const parseId = (value: string): string => {
-  const id = value.trim();
-  if (!id) {
+const parseId = (value: string): number => {
+  const id = Number(value.trim());
+  if (!Number.isSafeInteger(id) || id < 1) {
     throw new DomainError('El identificador no es válido');
   }
   return id;
