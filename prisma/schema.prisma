@@ -1,21 +1,19 @@
 // GENERATOR: le dice a Prisma cómo y dónde generar el cliente de TypeScript.
 generator client {
   // El tipo de generador moderno de Prisma 7.
-  provider            = "prisma-client"
+  provider            = "prisma-client-js"
 
   // La carpeta donde se escribirá el código generado (no se sube a Git).
-  output              = "../src/generated/prisma"
 
   // Formato CommonJS - necesario porque nuestro proyecto usa "require" (ver package.json: "type": "commonjs")
-  moduleFormat        = "cjs"
 
   // Los imports generados no llevan extensión de archivo.
-  importFileExtension = ""
 }
 
 // DATASOURCE - qué tipo de base de datos usamos. La dirección de conexión va en prisma.config.ts.
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // MODEL Company: la tabla "companies". Es el lado "uno" de la relación: una empresa tiene muchas vacantes.
@@ -39,7 +37,7 @@ model Company {
   // Campo "virtual": no es una columna. Permite pedir las vacantes de una empresa.
   vacancies   Vacancy[]
 
-  // Relación muchos a muchos con Candidate.
+  // Relación uno a muchos: cada candidato puede estar asociado a una empresa.
   candidates  Candidate[]
 
   @@map("companies")
@@ -74,8 +72,9 @@ model Candidate {
   email     String   @unique @db.VarChar(150)
   phone     String?  @db.VarChar(20)
 
-  // Relación muchos a muchos con Company
-  companies Company[]
+  // Clave foránea opcional hacia la empresa asociada.
+  companyId String?  @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
   @@map("candidates")
 

@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { PrismaClient } from '../../../../generated/prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../../../../shared/database/prismaClient';
 import { DomainError } from '../../../../shared/DomainError';
 import { PrismaCandidateRepository } from './PrismaCandidateRepository';

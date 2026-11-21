@@ -1,5 +1,5 @@
 // El tipo del cliente de Prisma. "../../../../" sube cuatro carpetas hasta src.
-import { PrismaClient } from '../../../../generated/prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 // Tipos del dominio y el contrato que vamos a cumplir.
 import { Company, CompanyLocation, NewCompany } from '../../domain/Company';

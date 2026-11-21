@@ -1,4 +1,4 @@
-import { PrismaClient } from '../../../../generated/prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { DomainError } from '../../../../shared/DomainError';
 import { Candidate, NewCandidate } from '../../domain/Candidate';
 import { CandidateRepository } from '../../ports/CandidateRepository';
