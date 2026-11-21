@@ -38,8 +38,8 @@ const samplesVacancies = [
 const createVacancyRepository = (): {name: string; repository: VacancyRepository} => {
     const databaseUrl = process.env.DATABASE_URL;
 
-    //Sin DATABASE_URL -> lista en memoria
-    if(!databaseUrl){
+    // En pruebas HTTP se usa memoria para no depender de PostgreSQL.
+    if (process.env.NODE_ENV === 'test' || !databaseUrl || process.env.VACANCIES_ADAPTER !== 'prisma') {
         return {name: 'in memory', repository: new InMemoryVacancyRepository(samplesVacancies)};
     }
 

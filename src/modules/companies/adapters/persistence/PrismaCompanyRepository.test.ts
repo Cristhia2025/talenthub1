@@ -1,7 +1,7 @@
 // Carga el .env para tener TEST_DATABASE_URL (Jest no lo carga solo).
 import 'dotenv/config';
 
-import { PrismaClient } from '../../../../generated/prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../../../../shared/database/prismaClient';
 import { PrismaCompanyRepository } from './PrismaCompanyRepository';
 

@@ -2,7 +2,7 @@
 import 'dotenv/config';
 
 import { DomainError } from '../../../../shared/DomainError';
-import { PrismaClient } from '../../../../generated/prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../../../../shared/database/prismaClient';
 import { PrismaVacancyRepository } from './PrismaVacancyRepository';
 
